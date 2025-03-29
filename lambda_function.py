@@ -29,12 +29,13 @@ def lambda_handler(event, context):
         company = job["company"]["name"]
         annual_from = job.get("annual_from")
         annual_to = job.get("annual_to")
+        source = "wanted"
 
         cursor.execute("""
-            INSERT INTO jobs (external_id, title, company, annual_from, annual_to)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO jobs (external_id, title, company, annual_from, annual_to, source)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (external_id) DO NOTHING
-        """, (job_id, title, company, annual_from, annual_to))
+        """, (job_id, title, company, annual_from, annual_to, source))
 
     conn.commit()
     cursor.close()
