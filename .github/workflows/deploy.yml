@@ -3,7 +3,7 @@ name: Deploy Lambda Function
 on:
   push:
     branches:
-      - main  
+      - main
 
 jobs:
   deploy:
@@ -20,8 +20,11 @@ jobs:
 
     - name: Install dependencies and zip package
       run: |
-        pip install -r requirements.txt -t .
-        zip -r lambda_package.zip . -x "*.git*"
+        mkdir -p package
+        pip install -r requirements.txt -t package
+        cp lambda_function.py package/
+        cd package
+        zip -r ../lambda_package.zip .
 
     - name: Deploy to AWS Lambda
       env:
