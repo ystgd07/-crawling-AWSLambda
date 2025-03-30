@@ -18,8 +18,8 @@ jobs:
       working-directory: scraping_function
       run: |
         mkdir -p package
-        # 마운트할 디렉토리를 scraping_function로 변경 (여기서 requirements.txt가 있음)
-        docker run --rm -v "$PWD/scraping_function":/var/task public.ecr.aws/sam/build-python3.10 pip install -r requirements.txt -t package
+        # 볼륨 마운트 경로 수정
+        docker run --rm -v "$PWD":/var/task public.ecr.aws/sam/build-python3.10 pip install -r requirements.txt -t package
         cp lambda_function.py package/
         cd package
         zip -r ../scraping_package.zip .
@@ -42,8 +42,8 @@ jobs:
       working-directory: refresh_function
       run: |
         mkdir -p package
-        # 마운트할 디렉토리를 refresh_function로 변경
-        docker run --rm -v "$PWD/refresh_function":/var/task public.ecr.aws/sam/build-python3.10 pip install -r requirements.txt -t package
+        # 볼륨 마운트 경로 수정
+        docker run --rm -v "$PWD":/var/task public.ecr.aws/sam/build-python3.10 pip install -r requirements.txt -t package
         cp lambda_function.py package/
         cd package
         zip -r ../refresh_package.zip .
