@@ -3,6 +3,23 @@ import requests
 import os
 from datetime import datetime, timedelta
 
+def lambda_handler(event, context):
+    """
+    AWS Lambda 진입점 함수
+    """
+    try:
+        refresh_jobs()
+        return {
+            "statusCode": 200,
+            "body": "Job refresh completed successfully."
+        }
+    except Exception as e:
+        print(f"Error in lambda_handler: {e}")
+        return {
+            "statusCode": 500,
+            "body": f"Error occurred: {str(e)}"
+        }
+
 def validate_job_via_api(job):
     """
     (옵션) API 재검증을 통해 상태를 판단하는 함수.
@@ -91,6 +108,8 @@ def refresh_jobs():
     conn.commit()
     cursor.close()
     conn.close()
+    
+    return "Refresh complete"
 
 if __name__ == "__main__":
     refresh_jobs()

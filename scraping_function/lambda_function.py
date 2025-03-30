@@ -30,6 +30,7 @@ def lambda_handler(event, context):
         job_id = job["id"]
         title = job["position"]
         company = job["company"]["name"]
+        location = job.get("address",{}).get("location")
         annual_from = job.get("annual_from")
         annual_to = job.get("annual_to")
         source = "wanted"
@@ -49,10 +50,10 @@ def lambda_handler(event, context):
 
         # INSERT: 중복 방지를 위해 (external_id, source) UNIQUE 제약을 사용
         cursor.execute("""
-            INSERT INTO jobs (external_id, title, company, annual_from, annual_to, source, detailurl, due_time)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO jobs (external_id, title, company, location, annual_from, annual_to, source, detailurl, due_time)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (external_id, source) DO NOTHING
-        """, (job_id, title, company, annual_from, annual_to, source, detailurl, due_time_dt))
+        """, (job_id, title, company, location, annual_from, annual_to, source, detailurl, due_time_dt))
 
     conn.commit()
     cursor.close()
