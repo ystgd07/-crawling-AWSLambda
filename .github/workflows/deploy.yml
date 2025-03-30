@@ -31,9 +31,10 @@ jobs:
         AWS_REGION: ${{ secrets.AWS_REGION }}
         SCRAPING_FUNCTION_NAME: ${{ secrets.SCRAPING_FUNCTION_NAME }}
       run: |
+        # 파일은 scraping_function 폴더 내에 생성되었으므로 경로 지정
         aws lambda update-function-code \
           --function-name $SCRAPING_FUNCTION_NAME \
-          --zip-file fileb://scraping_package.zip \
+          --zip-file fileb://scraping_function/scraping_package.zip \
           --region $AWS_REGION
 
     # --- 리프레시 함수 배포 ---
@@ -56,5 +57,5 @@ jobs:
       run: |
         aws lambda update-function-code \
           --function-name $REFRESH_FUNCTION_NAME \
-          --zip-file fileb://refresh_package.zip \
+          --zip-file fileb://refresh_function/refresh_package.zip \
           --region $AWS_REGION
