@@ -2,6 +2,7 @@ import psycopg2
 import requests
 import os
 from datetime import datetime, timedelta
+from elasticsearch import Elasticsearch
 
 def lambda_handler(event, context):
     """
@@ -63,22 +64,41 @@ def refresh_jobs():
     )
     cursor = conn.cursor()
     
+    # Elasticsearch 연결 설정
+    try:
+        es = Elasticsearch(
+            [os.environ["ES_HOST"] ],
+            basic_auth=(
+                os.environ["ES_USERNAME"], 
+                os.environ["ES_PASSWORD"]
+            ),
+            verify_certs=False  # 개발 환경에서만 사용
+        )
+        es_available = True
+    except Exception as e:
+        print(f"Elasticsearch 연결 실패: {e}")
+        es_available = False
+    
     # active와 open_ended 상태의 공고를 조회
     cursor.execute("""
-        SELECT id, external_id, posted_date, due_time, status 
+        SELECT id, external_id, posted_date, due_time, status, source, title 
         FROM jobs 
         WHERE status IN ('active', 'open_ended')
     """)
     jobs = cursor.fetchall()
     
+    updated_count = 0
+    
     for row in jobs:
-        job_id, external_id, posted_date, due_time, current_status = row
+        job_id, external_id, posted_date, due_time, current_status, source, title = row
         job = {
             "id": job_id,
             "external_id": external_id,
             "posted_date": posted_date,
             "due_time": due_time,
-            "status": current_status
+            "status": current_status,
+            "source": source,
+            "title": title
         }
         
         # due_time 기준 유효성 검사
@@ -98,18 +118,42 @@ def refresh_jobs():
         # new_status = validate_job_via_api(job)
         
         if new_status != current_status:
+            # PostgreSQL 업데이트
             cursor.execute("""
                 UPDATE jobs 
                 SET status = %s, last_validated_at = NOW() 
                 WHERE id = %s
             """, (new_status, job_id))
+            
             print(f"Job {external_id} 상태 변경: {current_status} -> {new_status}")
+            updated_count += 1
+            
+            # Elasticsearch 업데이트
+            if es_available:
+                try:
+                    # 문서 ID 생성 (source_external_id 형식)
+                    es_doc_id = f"{source}_{external_id}"
+                    
+                    # 부분 업데이트: status 및 last_validated_at 필드만 수정
+                    update_body = {
+                        "doc": {
+                            "status": new_status,
+                            "last_validated_at": datetime.now().isoformat()
+                        }
+                    }
+                    
+                    # Elasticsearch 문서 업데이트
+                    response = es.update(index="jobs", id=es_doc_id, body=update_body)
+                    print(f"Elasticsearch 문서 업데이트 완료: {es_doc_id}")
+                except Exception as e:
+                    print(f"Elasticsearch 업데이트 실패 (ID: {es_doc_id}): {e}")
     
     conn.commit()
     cursor.close()
     conn.close()
     
-    return "Refresh complete"
+    print(f"총 {updated_count}개의 작업 상태가 업데이트되었습니다.")
+    return f"Refresh complete. Updated {updated_count} jobs."
 
 if __name__ == "__main__":
     refresh_jobs()
