@@ -47,11 +47,11 @@ def lambda_handler(event, context):
         else:
             due_time_dt = None
 
-        # INSERT: 중복 방지를 위해 (source, external_id) UNIQUE 제약을 사용
+        # INSERT: 중복 방지를 위해 (external_id, source) UNIQUE 제약을 사용
         cursor.execute("""
             INSERT INTO jobs (external_id, title, company, annual_from, annual_to, source, detailurl, due_time)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (external_id) DO NOTHING
+            ON CONFLICT (external_id, source) DO NOTHING
         """, (job_id, title, company, annual_from, annual_to, source, detailurl, due_time_dt))
 
     conn.commit()
