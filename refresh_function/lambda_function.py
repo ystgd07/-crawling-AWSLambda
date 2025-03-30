@@ -1,5 +1,6 @@
 import psycopg2
 import requests
+import os
 from datetime import datetime, timedelta
 
 def validate_job_via_api(job):
@@ -37,10 +38,10 @@ def validate_job_via_api(job):
 
 def refresh_jobs():
     conn = psycopg2.connect(
-        host="your_db_host",
-        database="your_db_name",
-        user="your_db_user",
-        password="your_db_password",
+        host=os.environ["DB_HOST"],
+        database=os.environ["DB_NAME"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
         port=5432
     )
     cursor = conn.cursor()
