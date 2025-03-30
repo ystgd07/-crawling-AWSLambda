@@ -18,7 +18,8 @@ jobs:
       working-directory: scraping_function
       run: |
         mkdir -p package
-        pip install -r requirements.txt -t package
+        # Docker를 사용해 Amazon Linux 환경에서 dependencies 설치
+        docker run --rm -v "$PWD/scraping_function/package":/var/task lambci/lambda:build-python3.10 pip install -r requirements.txt -t /var/task
         cp lambda_function.py package/
         cd package
         zip -r ../scraping_package.zip .
@@ -31,7 +32,6 @@ jobs:
         AWS_REGION: ${{ secrets.AWS_REGION }}
         SCRAPING_FUNCTION_NAME: ${{ secrets.SCRAPING_FUNCTION_NAME }}
       run: |
-        # 파일은 scraping_function 폴더 내에 생성되었으므로 경로 지정
         aws lambda update-function-code \
           --function-name $SCRAPING_FUNCTION_NAME \
           --zip-file fileb://scraping_function/scraping_package.zip \
@@ -42,7 +42,7 @@ jobs:
       working-directory: refresh_function
       run: |
         mkdir -p package
-        pip install -r requirements.txt -t package
+        docker run --rm -v "$PWD/refresh_function/package":/var/task lambci/lambda:build-python3.10 pip install -r requirements.txt -t /var/task
         cp lambda_function.py package/
         cd package
         zip -r ../refresh_package.zip .
