@@ -1,4 +1,4 @@
-name: Deploy Lambda Function
+name: Deploy Lambda Functions
 
 on:
   push:
@@ -13,27 +13,48 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies and zip package
+    # --- 스크래핑 함수 배포 ---
+    - name: Package Scraping Lambda Function
+      working-directory: scraping_function
       run: |
         mkdir -p package
         pip install -r requirements.txt -t package
         cp lambda_function.py package/
         cd package
-        zip -r ../lambda_package.zip .
-
-    - name: Deploy to AWS Lambda
+        zip -r ../scraping_package.zip .
+        cd ..
+    
+    - name: Deploy Scraping Lambda Function
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+        SCRAPING_FUNCTION_NAME: ${{ secrets.SCRAPING_FUNCTION_NAME }}
       run: |
         aws lambda update-function-code \
-          --function-name $LAMBDA_FUNCTION_NAME \
-          --zip-file fileb://lambda_package.zip \
+          --function-name $SCRAPING_FUNCTION_NAME \
+          --zip-file fileb://scraping_package.zip \
+          --region $AWS_REGION
+
+    # --- 리프레시 함수 배포 ---
+    - name: Package Refresh Lambda Function
+      working-directory: refresh_function
+      run: |
+        mkdir -p package
+        pip install -r requirements.txt -t package
+        cp lambda_function.py package/
+        cd package
+        zip -r ../refresh_package.zip .
+        cd ..
+    
+    - name: Deploy Refresh Lambda Function
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        REFRESH_FUNCTION_NAME: ${{ secrets.REFRESH_FUNCTION_NAME }}
+      run: |
+        aws lambda update-function-code \
+          --function-name $REFRESH_FUNCTION_NAME \
+          --zip-file fileb://refresh_package.zip \
           --region $AWS_REGION
